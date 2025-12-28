@@ -49,6 +49,43 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       </div>
     `;
+        card.innerHTML = `
+          <h4>${activityName}</h4>
+          <p>${activity.description}</p>
+          <p><strong>Schedule:</strong> ${activity.schedule}</p>
+          <p><strong>Max participants:</strong> ${activity.max_participants}</p>
+          <div class="activity-card-participants">
+            <h5>Participants:</h5>
+            ${
+              activity.participants && activity.participants.length > 0
+                ? `<ul class="participants-list">${activity.participants.map((p) => `<li style='list-style:none;display:flex;align-items:center;gap:6px;'>${p} <span class='delete-participant' title='Remove participant' data-activity="${encodeURIComponent(activityName)}" data-email="${encodeURIComponent(p)}" style='color:#c00;cursor:pointer;font-weight:bold;'>&#10006;</span></li>`).join("")}</ul>`
+                : '<span style="color:#888;">No participants yet.</span>'
+            }
+          </div>
+        `;
+
+        // Add event listeners for delete icons
+        setTimeout(() => {
+          card.querySelectorAll('.delete-participant').forEach(icon => {
+            icon.addEventListener('click', async (e) => {
+              const activityName = decodeURIComponent(icon.getAttribute('data-activity'));
+              const email = decodeURIComponent(icon.getAttribute('data-email'));
+              if (confirm(`Remove ${email} from ${activityName}?`)) {
+                try {
+                  const response = await fetch(`/activities/${encodeURIComponent(activityName)}/remove?email=${encodeURIComponent(email)}`, { method: 'POST' });
+                  if (response.ok) {
+                    fetchActivities();
+                  } else {
+                    const result = await response.json();
+                    alert(result.detail || 'Failed to remove participant.');
+                  }
+                } catch (err) {
+                  alert('Error removing participant.');
+                }
+              }
+            });
+          });
+        }, 0);
     return card;
   }
 
@@ -73,6 +110,7 @@ document.addEventListener("DOMContentLoaded", () => {
         messageDiv.textContent = result.message;
         messageDiv.className = "success";
         signupForm.reset();
+        fetchActivities(); // odśwież listę aktywności po udanym zapisie
       } else {
         messageDiv.textContent = result.detail || "An error occurred";
         messageDiv.className = "error";

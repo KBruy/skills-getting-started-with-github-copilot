@@ -78,6 +78,19 @@ activities = {
 }
 
 
+# Usuwanie uczestnika z aktywności
+from fastapi import Query
+@app.post("/activities/{activity_name}/remove")
+def remove_participant(activity_name: str, email: str = Query(...)):
+    if activity_name not in activities:
+        raise HTTPException(status_code=404, detail="Activity not found")
+    activity = activities[activity_name]
+    if email not in activity["participants"]:
+        raise HTTPException(status_code=404, detail="Participant not found in this activity")
+    activity["participants"].remove(email)
+    return {"message": f"Removed {email} from {activity_name}"}
+
+
 @app.get("/")
 def root():
     return RedirectResponse(url="/static/index.html")
