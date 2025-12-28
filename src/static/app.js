@@ -15,17 +15,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Populate activities list
       Object.entries(activities).forEach(([name, details]) => {
-        const activityCard = document.createElement("div");
-        activityCard.className = "activity-card";
-
-        const spotsLeft = details.max_participants - details.participants.length;
-
-        activityCard.innerHTML = `
-          <h4>${name}</h4>
-          <p>${details.description}</p>
-          <p><strong>Schedule:</strong> ${details.schedule}</p>
-          <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
-        `;
+        const activityCard = renderActivityCard(name, details);
 
         activitiesList.appendChild(activityCard);
 
@@ -39,6 +29,64 @@ document.addEventListener("DOMContentLoaded", () => {
       activitiesList.innerHTML = "<p>Failed to load activities. Please try again later.</p>";
       console.error("Error fetching activities:", error);
     }
+  }
+
+  // Render activity card
+  function renderActivityCard(activityName, activity) {
+    const card = document.createElement("div");
+    card.className = "activity-card";
+    card.innerHTML = `
+      <h4>${activityName}</h4>
+      <p>${activity.description}</p>
+      <p><strong>Schedule:</strong> ${activity.schedule}</p>
+      <p><strong>Max participants:</strong> ${activity.max_participants}</p>
+      <div class="activity-card-participants">
+        <h5>Participants:</h5>
+        ${
+          activity.participants && activity.participants.length > 0
+            ? `<ul>${activity.participants.map((p) => `<li>${p}</li>`).join("")}</ul>`
+            : '<span style="color:#888;">No participants yet.</span>'
+        }
+      </div>
+    `;
+        card.innerHTML = `
+          <h4>${activityName}</h4>
+          <p>${activity.description}</p>
+          <p><strong>Schedule:</strong> ${activity.schedule}</p>
+          <p><strong>Max participants:</strong> ${activity.max_participants}</p>
+          <div class="activity-card-participants">
+            <h5>Participants:</h5>
+            ${
+              activity.participants && activity.participants.length > 0
+                ? `<ul class="participants-list">${activity.participants.map((p) => `<li style='list-style:none;display:flex;align-items:center;gap:6px;'>${p} <span class='delete-participant' title='Remove participant' data-activity="${encodeURIComponent(activityName)}" data-email="${encodeURIComponent(p)}" style='color:#c00;cursor:pointer;font-weight:bold;'>&#10006;</span></li>`).join("")}</ul>`
+                : '<span style="color:#888;">No participants yet.</span>'
+            }
+          </div>
+        `;
+
+        // Add event listeners for delete icons
+        setTimeout(() => {
+          card.querySelectorAll('.delete-participant').forEach(icon => {
+            icon.addEventListener('click', async (e) => {
+              const activityName = decodeURIComponent(icon.getAttribute('data-activity'));
+              const email = decodeURIComponent(icon.getAttribute('data-email'));
+              if (confirm(`Remove ${email} from ${activityName}?`)) {
+                try {
+                  const response = await fetch(`/activities/${encodeURIComponent(activityName)}/remove?email=${encodeURIComponent(email)}`, { method: 'POST' });
+                  if (response.ok) {
+                    fetchActivities();
+                  } else {
+                    const result = await response.json();
+                    alert(result.detail || 'Failed to remove participant.');
+                  }
+                } catch (err) {
+                  alert('Error removing participant.');
+                }
+              }
+            });
+          });
+        }, 0);
+    return card;
   }
 
   // Handle form submission
@@ -62,6 +110,7 @@ document.addEventListener("DOMContentLoaded", () => {
         messageDiv.textContent = result.message;
         messageDiv.className = "success";
         signupForm.reset();
+        fetchActivities(); // odśwież listę aktywności po udanym zapisie
       } else {
         messageDiv.textContent = result.detail || "An error occurred";
         messageDiv.className = "error";

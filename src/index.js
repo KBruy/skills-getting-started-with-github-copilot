@@ -1,19 +1,3 @@
-/* Ukryj punktor listy uczestników */
-.participants-list {
-  list-style: none;
-  padding-left: 0;
-}
-
-.delete-participant {
-  color: #c00;
-  cursor: pointer;
-  font-size: 1.1em;
-  margin-left: 4px;
-  transition: color 0.2s;
-}
-.delete-participant:hover {
-  color: #900;
-}
 * {
   box-sizing: border-box;
   margin: 0;
@@ -184,4 +168,25 @@ footer {
   margin-top: 30px;
   padding: 20px;
   color: #666;
+}
+
+function renderActivityCard(activity) {
+  const card = document.createElement('div');
+  card.className = 'activity-card';
+
+  card.innerHTML = `
+    <h4>${activity.name}</h4>
+    <p>${activity.description}</p>
+    <p><strong>Data:</strong> ${activity.date}</p>
+    <p><strong>Miejsce:</strong> ${activity.location}</p>
+    <div class="activity-card-participants">
+      <h5>Uczestnicy:</h5>
+      ${
+        activity.participants && activity.participants.length > 0
+          ? `<ul>${activity.participants.map(p => `<li>${p}</li>`).join('')}</ul>`
+          : '<span style="color:#888;">Brak zapisanych uczestników.</span>'
+      }
+    </div>
+  `;
+  return card;
 }
